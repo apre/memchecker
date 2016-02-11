@@ -130,6 +130,7 @@ static blockinfo * pbiGetBlockInfo(void * pb) {
 
     /* make sure that pb has been previously allocated.
      * otherwise it means that you try to find unallocated memory.
+     * (double delete of the same memory ?)
      */
     assert(pbi !=nullptr);
 
@@ -148,7 +149,7 @@ bool fCreateBlockInfo(void *pbNew, size_t sizeNew,allocation_source_t source){
 
     assert(pbNew !=nullptr && sizeNew != 0);
 
-    pbi = (blockinfo *) malloc(sizeof(blockinfo));
+    pbi = static_cast<blockinfo *> (malloc(sizeof(blockinfo)));
     if (pbi !=nullptr) {
         pbi->pb = static_cast<char*>(pbNew);
         pbi->size = sizeNew;
@@ -208,7 +209,7 @@ size_t sizeOfBlock(void * pb){
 bool fValidPointer(void * pv, size_t size){
     blockinfo * pbi;
 
-    void * pb = (void * ) pv;
+    void * pb = static_cast<void * > (pv);
 
     assert(pv!=nullptr && size != 0);
 
@@ -269,7 +270,17 @@ void* operator new(std::size_t sz) {
  */
 void operator delete(void* ptr) noexcept
 {
-    LOCK_DMEMORY()
+  if (ptr==nullptr) {
+    /* deleting nullptr:
+     *  3.7.4.2/3 says:
+     *The value of the ﬁrst argument supplied to a deallocation function may be a null pointer value;
+     * if so, and if the deallocation function is one supplied in the standard library,
+     *  the call has no effect
+     **/
+    return;
+  }
+
+  LOCK_DMEMORY()
 
     blockinfo * pbi;
     pbi = pbiGetBlockInfo(ptr);
@@ -287,6 +298,10 @@ void operator delete(void* ptr) noexcept
 }
 
 void operator delete[]( void* ptr ) {
+  if (ptr==nullptr) {
+    return;
+  }
+
     LOCK_DMEMORY()
 
     blockinfo * pbi;
