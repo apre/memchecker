@@ -74,20 +74,27 @@ size_t getNbOfNew();
 /** get the number of de-allocations performed*/
 size_t getNbOfFree();
 
-
+#ifdef _cplusplus
 extern "C" {
+#endif
 /** \c malloc() like function. */
 void* dmalloc(size_t sz );
 /** \c free() like function.*/
 void dfree( void* ptr );
+#ifdef _cplusplus
 }
+#endif
 
 /** indicates if memory logging is enabled.
 @return non-zero if enabled
 @retval 0 if disabled
 */
 int dMemAllocEnabled();
-
+/**
+ * @brief get current allocated amount of memory.
+ * @return  return the amount of memory allocated in bytes.
+ */
+size_t getAllocatedMemory();
 
 
 #endif // DMEMALLOCATOR_H
