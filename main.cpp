@@ -1,12 +1,29 @@
 #include <assert.h>
 #include <iostream>
 #include "memchecker.h"
+#include "gtest/gtest.h"
 
 using namespace std;
 
+TEST(DebugEnv, DebugEnabled) {
+#if NDEBUG
+    cout << "check that RELEASE (debug=" << dMemAllocEnabled() <<")"<< endl;
+    ASSERT_EQ(0, dMemAllocEnabled());
+    assert(dMemAllocEnabled() ==0);
+#else
+    cout << "check that in DEBUG mode  debug="<< dMemAllocEnabled() << endl;
+    ASSERT_TRUE(dMemAllocEnabled());
+    assert(dMemAllocEnabled());
+#endif
+}
 
-int main()
+
+int main(int argc, char **argv)
 {
+
+    ::testing::InitGoogleTest(&argc, argv);
+
+
     int* p1 = new int(10);
     std::cout << "P1: " << *p1 <<std::endl;
     assert (*p1==10);
@@ -24,17 +41,11 @@ int main()
     cout << "nb free:" << getNbOfFree() << endl;
     cout << "Delta  :" << getNbOfNew() - getNbOfFree() << endl;
 #endif
-#if NDEBUG
-    cout << "check that RELEASE (debug=" << dMemAllocEnabled() <<")"<< endl;
-    assert(dMemAllocEnabled() ==0);
-#else
-    cout << "check that in DEBUG mode  debug="<< dMemAllocEnabled() << endl;
-    assert(dMemAllocEnabled());
 
-#endif
     std::cout << "Allocated: "<< getAllocatedMemory() << std::endl;
 
-    return 0;
+    return RUN_ALL_TESTS();
+;
 }
 
 

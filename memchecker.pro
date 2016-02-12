@@ -3,8 +3,13 @@ CONFIG += console c++11
 CONFIG -= app_bundle
 CONFIG -= qt
 
+GTEST_DIR=$$(GTEST_DIR)
+
+INCLUDEPATH+=$$GTEST_DIR $$GTEST_DIR/include
+
 SOURCES += main.cpp \
-    memchecker.cpp
+    memchecker.cpp \
+    $$GTEST_DIR/src/gtest-all.cc
 HEADERS += \ 
     memchecker.h
 
@@ -15,7 +20,6 @@ DEFINES += DEBUG
 #Debug:DEFINES += DEBUG
 #Debug:DESTDIR = debug
 #Release:DESTDIR = release
-
 
 
 #CONFIG += release

@@ -74,14 +74,14 @@ size_t getNbOfNew();
 /** get the number of de-allocations performed*/
 size_t getNbOfFree();
 
-#ifdef _cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 /** \c malloc() like function. */
 void* dmalloc(size_t sz );
 /** \c free() like function.*/
 void dfree( void* ptr );
-#ifdef _cplusplus
+#ifdef __cplusplus
 }
 #endif
 
