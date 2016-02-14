@@ -81,20 +81,39 @@ extern "C" {
 void* dmalloc(size_t sz );
 /** \c free() like function.*/
 void dfree( void* ptr );
-#ifdef __cplusplus
-}
-#endif
+
+/** check is pointer has been allocated.
+ * @retval false if not valid
+ */
+int IsValidPointer(void * pv);
+
+/**
+ * @brief get the maximum amount of memory ever allocated.
+ * @return the max amount of memory that have been ever allocated.
+ *
+ * \sa getAllocatedMemory()
+ */
+size_t getMemoryAllocatedPeak() ;
+
 
 /** indicates if memory logging is enabled.
 @return non-zero if enabled
 @retval 0 if disabled
 */
 int dMemAllocEnabled();
+
 /**
  * @brief get current allocated amount of memory.
  * @return  return the amount of memory allocated in bytes.
+ *
+ * \sa getMemoryAllocatedPeak()
  */
 size_t getAllocatedMemory();
 
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // DMEMALLOCATOR_H

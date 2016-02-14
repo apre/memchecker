@@ -19,6 +19,8 @@
 \endverbatim
 */
 
+//#define FORCE_DISABLE_DEBUG_MEMORY 1
+
 #if !defined(DMEMALLOC_IMPLEMENT)
 #include "memchecker.h"
 #endif
@@ -46,7 +48,7 @@ int dMemAllocEnabled(){
 }
 
 
-#if defined(FORCE_DEBUG_MEMORY) && FORCE_DEBUG_MEMORY
+#if defined(FORCE_DEBUG_MEMORY) && FORCE_DEBUG_MEMORY && !(defined(FORCE_DISABLE_DEBUG_MEMORY) && FORCE_DISABLE_DEBUG_MEMORY)
 
 #define PTHREAD_MUTEX
 
@@ -80,6 +82,12 @@ static int bGarbage = 0xCA;
 /* current amount of bytes allocated. */
 static size_t gsCurrentlyAllocated=0;
 
+
+/* maximal ever memory usage seen */
+static size_t gsMaxAllocatedMemorySeen=0;
+
+
+
 /** indicates the context
 */
 typedef enum {
@@ -106,6 +114,11 @@ typedef struct blocinfo_s {
 
 /* head of the memory blocks log.*/
 static blockinfo *pbiHead=nullptr;
+
+
+
+
+
 
 /* return the log entry that contain pb.
 \param[in] pb an address that is in one allocated memory block.
@@ -135,6 +148,29 @@ static blockinfo * pbiGetBlockInfo(void * pb) {
     assert(pbi !=nullptr);
 
     return (pbi);
+}
+
+extern "C" {
+int  IsValidPointer(void * pb) {
+  LOCK_DMEMORY();
+  blockinfo * pbi;
+  pbi =pbiHead;
+
+  for (pbi = pbiHead; pbi != nullptr; pbi = pbi->pbiNext) {
+    void * pbStart = pbi->pb;
+    void * pbEnd = pbi->pb + pbi->size -1;
+
+    if ( fPtrGrtrEq(pb,pbStart) && fPtrLessEq(pb, pbEnd)) {
+      break;
+    }
+  }
+
+
+  UNLOCK_DMEMORY();
+
+  return pbi!=nullptr;
+}
+
 }
 
 /** create a new log entry.
@@ -220,6 +256,7 @@ bool fValidPointer(void * pv, size_t size){
 
 
 
+
 size_t getAllocatedMemory() {
 #ifdef NDEBUG
     return 0;
@@ -261,6 +298,15 @@ void* operator new(std::size_t sz) {
     }
     ++nbNewCounter;
     gsCurrentlyAllocated+=sz;
+    if (gsCurrentlyAllocated > gsMaxAllocatedMemorySeen) {
+        gsMaxAllocatedMemorySeen = gsCurrentlyAllocated;
+    }
+#if defined(PRINT_NEW)
+    printf("new(%p  %ld);\n",
+        ptr,
+        sz
+    );
+#endif
 
     UNLOCK_DMEMORY();
     return ptr;
@@ -331,14 +377,29 @@ void* dmalloc( size_t sz ) {
             ptr =nullptr;
         }
         gsCurrentlyAllocated+=sz;
+        if (gsCurrentlyAllocated > gsMaxAllocatedMemorySeen) {
+            gsMaxAllocatedMemorySeen = gsCurrentlyAllocated;
+        }
         ++nbNewCounter;
         UNLOCK_DMEMORY();
+#if defined(PRINT_DALLOC)
+        printf("dmalloc(%p  %ld);\n",
+            ptr,
+            sz
+        );
+#endif
         return ptr;
     }
 
 }
 
 void dfree( void* ptr ){
+
+  if (ptr==nullptr) {
+    /* free against NULL ptr is valid and does nothing. */
+    return;
+  }
+
     LOCK_DMEMORY();
 
     blockinfo * pbi;
@@ -347,6 +408,13 @@ void dfree( void* ptr ){
     assert (pbi->source == PLAIN_C);
     memset(ptr,bGarbage,pbi->size);
     gsCurrentlyAllocated-=pbi->size;
+
+#if defined(PRINT_DFREE)
+    printf("dfree(%p  %ld);\n",
+        ptr,
+        pbi->size
+    );
+#endif
 
     std::free(ptr);
 
@@ -357,7 +425,6 @@ void dfree( void* ptr ){
 }
 
 
-
 size_t getNbOfNew() {
     size_t retval;
     LOCK_DMEMORY();
@@ -365,6 +432,18 @@ size_t getNbOfNew() {
     UNLOCK_DMEMORY();
     return retval;
 }
+
+
+size_t getMemoryAllocatedPeak() {
+    size_t retval;
+    LOCK_DMEMORY();
+    retval =  gsMaxAllocatedMemorySeen;
+    UNLOCK_DMEMORY();
+    return retval;
+}
+
+
+
 size_t getNbOfFree() {
     size_t retval;
     LOCK_DMEMORY();
@@ -390,7 +469,11 @@ void* dmalloc( size_t sz )
 }
 
 void dfree( void* ptr ){
-   free(ptr);
+    free(ptr);
+}
+
+size_t getMemoryAllocatedPeak() {
+    return 0;
 }
 
 }
