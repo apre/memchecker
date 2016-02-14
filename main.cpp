@@ -1,4 +1,4 @@
-#include <assert.h>
+ #include <assert.h>
 #include <iostream>
 #include "memchecker.h"
 #include "gtest/gtest.h"
@@ -21,15 +21,11 @@ TEST(DebugEnv, DebugEnabled) {
 int main(int argc, char **argv)
 {
 
-    ::testing::InitGoogleTest(&argc, argv);
-
-
     int* p1 = new int(10);
     std::cout << "P1: " << *p1 <<std::endl;
     assert (*p1==10);
     std::cout << "Allocated: "<< getAllocatedMemory() << std::endl;
     delete p1;
-
 
     int* p2 = new int[10]; // guaranteed to call the replacement in C++11
     p2[0] = 1;
@@ -43,7 +39,7 @@ int main(int argc, char **argv)
 #endif
 
     std::cout << "Allocated: "<< getAllocatedMemory() << std::endl;
-
+    ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 ;
 }
