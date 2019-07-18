@@ -12,9 +12,12 @@ SOURCES += main.cpp \
     memchecker.cpp \
     $$GTEST_DIR/src/gtest-all.cc \
     tests/tst_c.c \
-    tests/tst_c_interfacing.cpp
+    tests/tst_c_interfacing.cpp \
+
 HEADERS += \ 
-    memchecker.h
+    memchecker.
+
+LIBS += -lpthread
 
 CONFIG += debug
 DEFINES += DEBUG

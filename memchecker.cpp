@@ -32,8 +32,15 @@
 #include <cstdlib>
 
 
+//#define PRINT_DFREE
+#define DANGEROUS_GARBAGE_AFTER_FREE 1
+
 #define nullptr NULL
 #define noexcept
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 int plop() {
     return 1;
@@ -46,6 +53,10 @@ int dMemAllocEnabled(){
     return 0;
 #endif
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #if defined(FORCE_DEBUG_MEMORY) && FORCE_DEBUG_MEMORY && !(defined(FORCE_DISABLE_DEBUG_MEMORY) && FORCE_DISABLE_DEBUG_MEMORY)
@@ -150,7 +161,10 @@ static blockinfo * pbiGetBlockInfo(void * pb) {
     return (pbi);
 }
 
+#ifdef __cplusplus
 extern "C" {
+#endif
+
 int  IsValidPointer(void * pb) {
   LOCK_DMEMORY();
   blockinfo * pbi;
@@ -171,7 +185,6 @@ int  IsValidPointer(void * pb) {
   return pbi!=nullptr;
 }
 
-}
 
 /** create a new log entry.
  * \param[in] pbNew the memory that the log should record. It must be NOT null.
@@ -268,6 +281,10 @@ size_t getAllocatedMemory() {
     return retval;
 }
 
+#ifdef __cplusplus
+}
+#endif
+
 
 void* operator new[]( std::size_t count ) {
     LOCK_DMEMORY();
@@ -311,6 +328,36 @@ void* operator new(std::size_t sz) {
     UNLOCK_DMEMORY();
     return ptr;
 }
+
+
+// same code as for new
+void* operator new(std::size_t sz, const std::nothrow_t& nothrow_constant) throw()
+{
+    LOCK_DMEMORY();
+    void * ptr =  std::malloc(sz);
+    assert(ptr);
+    memset(ptr,bGarbagAlloc,sz);
+    if (!fCreateBlockInfo(ptr,sz,PLAIN_CXX)) {
+        std::free(ptr);
+        ptr =nullptr;
+    }
+    ++nbNewCounter;
+    gsCurrentlyAllocated+=sz;
+    if (gsCurrentlyAllocated > gsMaxAllocatedMemorySeen) {
+        gsMaxAllocatedMemorySeen = gsCurrentlyAllocated;
+    }
+#if defined(PRINT_NEW)
+    printf("new nonThrow(%p  %ld);\n",
+        ptr,
+        sz
+    );
+#endif
+
+    UNLOCK_DMEMORY();
+    return ptr;
+}
+
+
 
 /** replacement of delete operator.
  */
@@ -365,8 +412,11 @@ void operator delete[]( void* ptr ) {
     UNLOCK_DMEMORY();
 }
 
+#ifdef __cplusplus
 extern "C" {
-void* dmalloc( size_t sz ) {
+#endif
+
+void* dmalloc( size_t sz )
     {
         LOCK_DMEMORY();
         void * ptr =  std::malloc(sz);
@@ -391,7 +441,7 @@ void* dmalloc( size_t sz ) {
         return ptr;
     }
 
-}
+
 
 void dfree( void* ptr ){
 
@@ -410,19 +460,24 @@ void dfree( void* ptr ){
     gsCurrentlyAllocated-=pbi->size;
 
 #if defined(PRINT_DFREE)
-    printf("dfree(%p  %ld);\n",
+    printf("dfree(%p  %ld) %x;\n",
         ptr,
-        pbi->size
+        pbi->size,
+           *(u_int32_t*) ptr
     );
+
 #endif
 
     std::free(ptr);
+#if defined(DANGEROUS_GARBAGE_AFTER_FREE) && DANGEROUS_GARBAGE_AFTER_FREE
+   memset(ptr,bGarbage,pbi->size);
+#endif
 
     ++nbFreeCounter;
     UNLOCK_DMEMORY();
 }
 
-}
+
 
 
 size_t getNbOfNew() {
@@ -432,6 +487,7 @@ size_t getNbOfNew() {
     UNLOCK_DMEMORY();
     return retval;
 }
+
 
 
 size_t getMemoryAllocatedPeak() {
@@ -451,6 +507,10 @@ size_t getNbOfFree() {
     UNLOCK_DMEMORY();
     return retval;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #else
 

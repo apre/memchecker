@@ -52,7 +52,7 @@
  *
  **/
 #if defined(DMEMALLOC_IMPLEMENT) && DMEMALLOC_IMPLEMENT
-#include "dmemalloc.cpp"
+#include "memchecker.cpp"
 #endif
 
 int plop() ;
@@ -73,6 +73,15 @@ size_t getNbOfNew();
 
 /** get the number of de-allocations performed*/
 size_t getNbOfFree();
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef __cplusplus
 extern "C" {

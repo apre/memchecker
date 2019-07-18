@@ -24,12 +24,14 @@ int test_c_alloc_free() {
   test correctnes of allocation and free garbage for C
  */
 int test_calloc_garbage() {
-     uint32_t* p =dmalloc(sizeof(uint32_t));
+     volatile uint32_t* p =dmalloc(sizeof(uint32_t));
      assert(p);
 
      uint32_t alloc_val = *p;
      dfree(p);
      uint32_t free_val = *p;
+     assert(alloc_val == 0xBEBEBEBE);
+     assert(free_val == 0xCACACACA);
 
      return (alloc_val == 0xBEBEBEBE) && (free_val == 0xCACACACA);
 
